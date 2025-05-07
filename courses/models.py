@@ -1,6 +1,7 @@
 from cloudinary.models import CloudinaryField
 from django.db import models
-
+from django.utils.text import slugify
+import uuid
 import helpers
 
 helpers.cloudinary_init()
@@ -19,15 +20,35 @@ def upload_image(instance, filename):
     return f"{filename}"
 
 
+def get_public_id_prefix(instance, *args, **kwargs):
+    title = instance.title
+    if title:
+        slug = slugify(title)
+        unique_id = str(uuid.uuid4()).replace("-", "")[:5]
+        return f"courses/{slug}-{unique_id}"
+    if instance.id:
+        return f"courses/{instance.id}"
+    return "courses"
+
+
+def get_public_display_name(instance, *args, **kwargs):
+    title = instance.title
+    if title:
+        return title
+    return "Course Upload"
+
 # course model
 class Course(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True, null=True)
     #published_date = models.DateTimeField(auto_now_add=True)
     #images = models.ImageField(upload_to=upload_image, blank=True, null=True)
-    image = CloudinaryField('image', null=True, blank=True)
+    image = CloudinaryField('image', null=True, blank=True, public_id_prefix=get_public_id_prefix,
+                            display_name=get_public_display_name, tags=["course", "thumbnail", ])
     access = models.CharField(max_length=5, choices=AccessRequirement.choices, default=AccessRequirement.EMAIL_REQUIRED)
     status = models.CharField(max_length=5, choices=PublishStatus.choices, default=PublishStatus.DRAFT)
+    updated = models.DateTimeField(auto_now=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
 
     @property
     def is_published(self):
@@ -67,6 +88,7 @@ class Lesson(models.Model):
     preview = models.BooleanField(default=False, help_text="if user doesn't have access to course, can they see this ?")
     status = models.CharField(max_length=10, choices=PublishStatus.choices, default=PublishStatus.PUBLISHED)
     updated = models.DateTimeField(auto_now=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['order']
+        ordering = ['order', '-updated']
