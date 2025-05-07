@@ -19,7 +19,7 @@ def upload_image(instance, filename):
     return f"{filename}"
 
 
-
+# course model
 class Course(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True, null=True)
@@ -56,10 +56,17 @@ class Course(models.Model):
         url = self.image.build_url(**image_options)
         return url
 
-
+# Lesson model
 class Lesson(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
     description = models.TextField(null=True, blank=True)
+    thumbnail = CloudinaryField('image', null=True, blank=True)
+    video = CloudinaryField('video', null=True, blank=True, resource_type="video")
+    order = models.IntegerField(default=0)
     preview = models.BooleanField(default=False, help_text="if user doesn't have access to course, can they see this ?")
     status = models.CharField(max_length=10, choices=PublishStatus.choices, default=PublishStatus.PUBLISHED)
+    updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['order']
